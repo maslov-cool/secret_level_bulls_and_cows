@@ -3,8 +3,8 @@ import random
 
 attempt = 0
 history = []
-# в словаре хранятся коровы('cows' - значения) и быки (bulls: индексы):
-dict_ = {'cows': [], 'bulls': []}
+# в словаре хранятся коровы('cows' - значения) и быки (bulls: словарь -> индекс: значение):
+dict_ = {'cows': [], 'bulls': {}}
 
 
 def check_num(n):
@@ -21,28 +21,40 @@ def bulls_and_cows(list_human_num: list, list_bot_num: list) -> (int, int):
     bulls, cows = 0, 0
     l1 = list_human_num
     l2 = list_bot_num
-    for i in range(len(l2)):
-        if l2[i] == l1[i]:
-            bulls += 1
-            if i not in dict_['bulls']:
-                dict_['bulls'].append(i)
-    for i in range(len(l2)):
-        if l2[i] in l1:
-            if l2[i] and l2[i] not in dict_['cows'] and i not in dict_['bulls']:
-                cows += 1
-                dict_['cows'].append(l2[i])
+    for k in range(len(l2)):
+        if l2[k] == l1[k]:
+            if k not in dict_['bulls'].keys():
+                bulls += 1
+                dict_['bulls'][k] = l1[k]
+                if l2[k] in dict_['cows']:
+                    del dict_['cows'][dict_['cows'].index(l1[k])]
+    for j in dict_['bulls'].keys():
+        l1[j] = ''
+        l2[j] = ''
+    k = 0
+    while k != len(l2):
+        if l2[k] != '' and l2[k] in l1:
+            cows += 1
+            dict_['cows'].append(l2[k])
+            del l1[l1.index(l2[k])]
+            del l2[k]
+            k -= 1
+        k += 1
     return bulls, cows
 
 
-def check(human_num_: int, bot_num_: int) -> bool:
+def check(bot_num_: int) -> bool:
     global dict_
-    l1 = number_to_list(human_num_)
-    l2 = number_to_list(bot_num_)
-    # в процессе генерации мы генерируем только цифры, индексы которых не в dict_['bulls']
-    if len(str(bot_num_)) == 4 and all(j in [l2[i] for i in range(len(l2)) if i not in dict_['bulls']]
-                                       for j in dict_['cows']):
-        return True
-    return False
+    l = number_to_list(bot_num_)
+    l = [l[q] for q in range(len(l)) if q not in dict_['bulls'].keys()]
+    # в процессе генерации мы генерируем только цифры, индексы которых не в dict_['bulls'],
+    # поэтому проверка только на коров
+    for i in dict_['cows']:
+        if i in l:
+            del l[l.index(i)]
+        else:
+            return False
+    return True
 
 
 print("Здравствуйте, добро пожаловать в игру 'Коровы и быки. 'Секретный уровень'")
@@ -62,22 +74,17 @@ print(f'Количество быков: {bulls_cows[0]}')
 print(f'Количество коров: {bulls_cows[1]}')
 
 while bot_num != human_num:
-    bot_num = [i for i in str(human_num)]
-    for i in range(len(bot_num)):
-        if i:
-            if i not in dict_['bulls']:
-                bot_num[i] = str(random.randint(0, 9))
-        else:
-            if i not in dict_['bulls']:
-                bot_num[i] = str(random.randint(1, 9))
+    bot_num = [i for i in '0000']
+    for i in dict_['bulls'].keys():
+        bot_num[i] = str(dict_['bulls'][i])
     bot_num = int(''.join(bot_num))
-    while not check(human_num, bot_num):
-        bot_num = [i for i in str(human_num)]
+
+    while not check(bot_num):
+        bot_num = [i for i in str(bot_num)]
         for i in range(len(bot_num)):
-            if i not in dict_['bulls']:
+            if i not in dict_['bulls'].keys():
                 bot_num[i] = str(random.randint(0, 9))
         bot_num = int(''.join(bot_num))
-
     human_num = input()
     while not check_num(human_num):
         print('Некорректный ввод')
@@ -87,12 +94,10 @@ while bot_num != human_num:
     bulls_cows = bulls_and_cows(number_to_list(human_num), number_to_list(bot_num))
     print(f'Количество быков: {bulls_cows[0]}')
     print(f'Количество коров: {bulls_cows[1]}')
-    for i in dict_['cows']:
-        if str(i) in str(human_num) and str(human_num).index(str(i)) == str(bot_num).index(str(i)):
-            dict_['bulls'].append(i)
-            del dict_['cows'][dict_['cows'].index(i)]
             
 print('Поздравляю с победой!')
+
+
 
 
 
